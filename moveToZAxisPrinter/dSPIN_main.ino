@@ -103,10 +103,19 @@ void setup()
   //  There are ACC, DEC, and HOLD KVAL registers as well; you may need to play with
   //  those values to get acceptable performance for a given application.
   
-  dSPIN_SetParam(dSPIN_KVAL_RUN, 0x50);
-  dSPIN_SetParam(dSPIN_KVAL_ACC, 0x64);
-  dSPIN_SetParam(dSPIN_KVAL_DEC, 0x64);
-  dSPIN_SetParam(dSPIN_KVAL_HOLD,0xa);
+  // 1e = 12 %
+  // 7D = 50 %
+  // 3F = 25 %
+  // BE = 75%
+  // FF  = 100%
+  
+  
+  
+  
+  dSPIN_SetParam(dSPIN_KVAL_RUN, 0x7d);
+  dSPIN_SetParam(dSPIN_KVAL_ACC, 0x7d);
+  dSPIN_SetParam(dSPIN_KVAL_DEC, 0x7d);
+  dSPIN_SetParam(dSPIN_KVAL_HOLD,0x1e);
   
   
     // Configure the MAX_SPEED register- this is the maximum number of (micro)steps per
@@ -213,6 +222,7 @@ void findUpperLimit() {
   while (digitalRead(upperLimitPin) == HIGH) {
      dSPIN_Move(REV, 40 * 128.0);
      while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+     
     // if (maxSpeedRise < 399) {
      //dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(maxSpeedRise)); 
     // }
@@ -224,7 +234,7 @@ void findUpperLimit() {
      
   dSPIN_Move(FWD, 700.0 * 128.0);
   while (digitalRead(dSPIN_BUSYN) == LOW);
- delay(100);
+ //delay(100);
 }
 
 void findLowerLimit() {
@@ -252,7 +262,7 @@ void loop()
 
   if (startup == 1) {
     findUpperLimit();
-    findLowerLimit();
+    //findLowerLimit();
     startup = 0;
   }
 
