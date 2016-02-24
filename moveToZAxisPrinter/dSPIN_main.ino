@@ -10,13 +10,26 @@ int ACPowerPin = 16;
 
 
 
-
+int dripPin = A3;
 int lightBrightness = 0;
 int maxSpeedRise = 0 ;
 int accelerationRate = 20;
 
 
+int pulsesPerDrip = 20;
+// the loop routine runs over and over again forever:
 
+
+void sendDrip() {
+  delay(200);
+  
+   for (int i=0; i <= pulsesPerDrip; i++){
+  digitalWrite(dripPin, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(0);               // wait for a second
+  digitalWrite(dripPin, LOW);    // turn the LED off by making the voltage LOW
+  delay(1);               // wait for a second
+   }
+}
 
 
 
@@ -42,6 +55,7 @@ void setup()
   pinMode(shutterPin, OUTPUT);
   pinMode(lightOffOverRidePin, INPUT);
   pinMode(ACPowerPin, OUTPUT);
+  pinMode(dripPin, OUTPUT);
   
  
   
@@ -254,6 +268,32 @@ void findLowerLimit() {
 }
 
 
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read(); 
+
+      if (inChar == 'f'){
+        dSPIN_Move(FWD, 200.0 * 128.0);
+        Serial.println(inChar);
+        inChar = '`';
+      }
+      
+      if (inChar == 'r'){
+        dSPIN_Move(REV, 10000.0 * 128.0);
+        Serial.println(inChar);
+        inChar = '`';
+      }      
+      
+            if (inChar == 'd'){
+        sendDrip();
+        Serial.println(inChar);
+        inChar = '`';
+      }    
+   
+  }
+}
+
 
 int startup = 1;
 
@@ -277,23 +317,4 @@ void loop()
 
 
 
-void serialEvent() {
-  while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read(); 
 
-      if (inChar == 'f'){
-        dSPIN_Move(FWD, 200.0 * 128.0);
-        Serial.println(inChar);
-        inChar = '`';
-      }
-      
-      if (inChar == 'r'){
-        dSPIN_Move(REV, 10000.0 * 128.0);
-        Serial.println(inChar);
-        inChar = '`';
-      }      
-      
-   
-  }
-}
