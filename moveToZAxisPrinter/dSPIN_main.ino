@@ -22,11 +22,12 @@ int lightOffOverRidePin = 15;
 int ACPowerPin = 16;
 int PrintHeight = 1;
 int stepCount = 0;
+boolean firstDrip = true;
 
 float mmPerStep = 0.003927;
 
 float stepsPerLayer = layerHeight/mmPerStep;
-float dripsPermm = 1 / layerHeight; 
+float dripsPermm = (1.0 / layerHeight) * 2.0; 
 float maxSteps = maxHeight / mmPerStep;
 
 
@@ -63,19 +64,28 @@ void dipPrint(){
 }
 
 
-
-void sendDrip() {
+void sendDrip(){
   
   delay(dripDelay);
-  
-  stepCount += 25;
   Serial.println(stepCount);
-   for (int i=0; i <= pulsesPerDrip; i++){
+   for (int i=0; i < pulsesPerDrip; i++) {
   digitalWrite(dripPin, HIGH);   // turn the LED on (HIGH is the voltage level)
   delay(0);               // wait for a second
   digitalWrite(dripPin, LOW);    // turn the LED off by making the voltage LOW
   delay(1);               // wait for a second
    }
+}
+
+
+
+void nextLayer() {
+  
+  
+  
+  stepCount += 25;
+  sendDrip();
+  sendDrip(); 
+   
    dSPIN_Move(FWD, 25 * 128.0);
   while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
 }
@@ -407,13 +417,16 @@ void loop()
   }
 
 if (stepCount < maxSteps && pause == 0){
-  dipPrint();
   
- sendDrip();
-
- delay(longestLayerTime);
-
- 
+    if (firstDrip){
+      sendDrip();
+      firstDrip = false;
+      Serial.println("send first stager drip");
+    }
+  
+  dipPrint();
+  nextLayer();
+  delay(longestLayerTime);
 }
 
 if (stepCount > maxSteps && pause == 0){
