@@ -1,3 +1,8 @@
+float maxHeight = 10; ////////////////////////////////////////////////// GAVIN CHANG THIS
+float layerHeight = .2;
+float resinHeight = 2800.0; 
+int pause = 1;
+int startup = 1;
 // pins:
 int lightPin = 9;
 int dimmerNobPin = 14;
@@ -7,7 +12,14 @@ int errorPin = 5;
 int shutterPin = 8;
 int lightOffOverRidePin = 15;
 int ACPowerPin = 16;
+int PrintHeight = 1;
+int stepCount = 0;
 
+float mmPerStep = 0.003927;
+
+float stepsPerLayer = layerHeight/mmPerStep;
+float dripsPermm = 1 / layerHeight; 
+float maxSteps = maxHeight / mmPerStep;
 
 
 int dripPin = A3;
@@ -15,20 +27,49 @@ int lightBrightness = 0;
 int maxSpeedRise = 0 ;
 int accelerationRate = 20;
 
-
+int dripDelay = 500;
 int pulsesPerDrip = 20;
 // the loop routine runs over and over again forever:
 
+float dipPrintHeight = 4.0;
+float dipPrintSteps = dipPrintHeight / mmPerStep;
+int longestLayerTime = 4000;
+int delayAfterDip = 2000;
+int liftPrintHeight = 3;
+int liftPrintSteps = liftPrintHeight/ mmPerStep;
+
+
+
+
+void dipPrint(){
+      dSPIN_Move(FWD, dipPrintSteps * 128.0);
+         while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+      dSPIN_Move(REV, (dipPrintSteps + liftPrintSteps) * 128.0);
+         while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+         delay(delayAfterDip);
+      dSPIN_Move(FWD, liftPrintSteps * 128.0);
+         while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+      
+      
+         
+}
+
+
 
 void sendDrip() {
-  delay(200);
   
+  delay(dripDelay);
+  
+  stepCount += 25;
+  Serial.println(stepCount);
    for (int i=0; i <= pulsesPerDrip; i++){
   digitalWrite(dripPin, HIGH);   // turn the LED on (HIGH is the voltage level)
   delay(0);               // wait for a second
   digitalWrite(dripPin, LOW);    // turn the LED off by making the voltage LOW
   delay(1);               // wait for a second
    }
+   dSPIN_Move(FWD, 25 * 128.0);
+  while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
 }
 
 
@@ -138,7 +179,7 @@ void setup()
   //  passed to this function is in steps/tick; MaxSpdCalc() will convert a number of
   //  steps/s into an appropriate value for this function. Note that for any move or
   //  goto type function where no speed is specified, this value will be used.
-  dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(300));
+  dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(450));
   // Calling GetStatus() clears the UVLO bit in the status register, which is set by
   //  default on power-up. The driver may not run without that bit cleared by this
   //  read operation.
@@ -236,6 +277,8 @@ void findUpperLimit() {
   while (digitalRead(upperLimitPin) == HIGH) {
      dSPIN_Move(REV, 40 * 128.0);
      while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+     stepCount = 0;
+     pause = 1;
      
     // if (maxSpeedRise < 399) {
      //dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(maxSpeedRise)); 
@@ -246,7 +289,7 @@ void findUpperLimit() {
      //}
      }
      
-  dSPIN_Move(FWD, 700.0 * 128.0);
+  dSPIN_Move(FWD, resinHeight * 128.0);
   while (digitalRead(dSPIN_BUSYN) == LOW);
  //delay(100);
 }
@@ -273,44 +316,108 @@ void serialEvent() {
     // get the new byte:
     char inChar = (char)Serial.read(); 
 
-      if (inChar == 'f'){
+      if (inChar == 'd'){
         dSPIN_Move(FWD, 200.0 * 128.0);
         Serial.println(inChar);
         inChar = '`';
       }
       
-      if (inChar == 'r'){
+      if (inChar == 'u'){
         dSPIN_Move(REV, 10000.0 * 128.0);
         Serial.println(inChar);
         inChar = '`';
       }      
       
-            if (inChar == 'd'){
+            if (inChar == 't'){
         sendDrip();
         Serial.println(inChar);
         inChar = '`';
+      }   
+     
+                 if (inChar == 'f'){
+        dripDelay -= 100;
+        if (dripDelay < 1){
+          dripDelay = 100;
+        }
+          
+        
+        Serial.println(inChar);
+        inChar = '`';
       }    
+     
+                 if (inChar == 's'){
+        dripDelay += 100;
+        Serial.println(inChar);
+        inChar = '`';
+      }  
+   
+                  if (inChar == 'r'){
+        startup = 1;
+        Serial.println(inChar);
+        inChar = '`';
+      }      
+      
+                  if (inChar == 'p'){
+        pause = 1;
+        Serial.println(inChar);
+        inChar = '`';
+      }  
+      
+                 if (inChar == 'g'){
+        pause = 0;
+        Serial.println(inChar);
+        inChar = '`';
+      }  
    
   }
 }
 
 
-int startup = 1;
+
 
 void loop()
 {
 
   if (startup == 1) {
+    Serial.println("254 drips per mm");
+    Serial.println("f = faster... s = slower ... p = pause ... g = go/unpause ....  r = restart");
+    Serial.println("layerHeight:");
+    Serial.println(layerHeight);
+    Serial.println("mmPerStep");
+    Serial.println(mmPerStep,8);
+    Serial.println("stepsPerLayer");
+    Serial.println(stepsPerLayer);
+    Serial.println("dripsPermm:");
+    Serial.println(dripsPermm);
+    Serial.println("maxSteps");
+    Serial.println(maxSteps);
+ //   Serial.println("dipPrintSteps")
+  //  Serial.println(dipPrintSteps);
     findUpperLimit();
     //findLowerLimit();
     startup = 0;
   }
 
+if (stepCount < maxSteps && pause == 0){
+  dipPrint();
+  
+ sendDrip();
 
+ delay(longestLayerTime);
 
-  abortIfLimitSwitch();
-  oporateShutter();
-  checkOverRideLights();
+ 
+}
+
+if (stepCount > maxSteps && pause == 0){
+    Serial.println("FINISHED PRINT");
+  findUpperLimit();
+  pause = 1;
+
+}
+  serialEvent();
+//  abortIfLimitSwitch();
+ // oporateShutter();
+//  checkOverRideLights();
  
   
 }
