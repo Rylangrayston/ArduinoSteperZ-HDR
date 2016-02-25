@@ -1,6 +1,14 @@
 float maxHeight = 10; ////////////////////////////////////////////////// GAVIN CHANG THIS
-float layerHeight = .2;
+float layerHeight = .2;        // bigDip: 0.1   , bounceyDip
+float dipPrintHeight = 4.0;    // bigDip: 4.0   , bounceyDip
+int liftPrintHeight = 3;       // bigDip: 3.    , bounceyDip
+int delayAfterLift = 2000;      // bigDip: 2000  , bounceyDip
+int delayAtSurface = 0;        // bigDip: 0     , bounceyDip
+
+int longestLayerTime = 4000;   
 float resinHeight = 2800.0; 
+
+
 int pause = 1;
 int startup = 1;
 // pins:
@@ -31,11 +39,10 @@ int dripDelay = 500;
 int pulsesPerDrip = 20;
 // the loop routine runs over and over again forever:
 
-float dipPrintHeight = 4.0;
+
 float dipPrintSteps = dipPrintHeight / mmPerStep;
-int longestLayerTime = 4000;
-int delayAfterDip = 2000;
-int liftPrintHeight = 3;
+
+
 int liftPrintSteps = liftPrintHeight/ mmPerStep;
 
 
@@ -46,9 +53,10 @@ void dipPrint(){
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
       dSPIN_Move(REV, (dipPrintSteps + liftPrintSteps) * 128.0);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
-         delay(delayAfterDip);
+         delay(delayAfterLift);
       dSPIN_Move(FWD, liftPrintSteps * 128.0);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+      delay(delayAtSurface);
       
       
          
