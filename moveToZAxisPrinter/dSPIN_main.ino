@@ -1,12 +1,12 @@
 float maxHeight = 10; ////////////////////////////////////////////////// GAVIN CHANG THIS
-float layerHeight = .2;        // bigDip: 0.1   , bounceyDip
-float dipPrintHeight = 4.0;    // bigDip: 4.0   , bounceyDip
+float layerHeight = .1;        // bigDip: 0.1   , bounceyDip
+float dipPrintHeight = 4;    // bigDip: 4.0   , bounceyDip
 int liftPrintHeight = 3;       // bigDip: 3.    , bounceyDip
 int delayAfterLift = 2000;      // bigDip: 2000  , bounceyDip
-int delayAtSurface = 0;        // bigDip: 0     , bounceyDip
+int delayAtSurface = 3000;        // bigDip: 0     , bounceyDip
 
-int longestLayerTime = 4000;   
-float resinHeight = 2800.0; 
+int longestLayerTime = 5000;   
+float resinHeight = 3000.0;
 
 
 int pause = 1;
@@ -82,11 +82,11 @@ void nextLayer() {
   
   
   
-  stepCount += 25;
+  stepCount += stepsPerLayer;
   sendDrip();
   sendDrip(); 
    
-   dSPIN_Move(FWD, 25 * 128.0);
+   dSPIN_Move(FWD, stepsPerLayer * 128.0);
   while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
 }
 
@@ -297,6 +297,7 @@ void findUpperLimit() {
      while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
      stepCount = 0;
      pause = 1;
+     firstDrip = true;
      
     // if (maxSpeedRise < 399) {
      //dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(maxSpeedRise)); 
