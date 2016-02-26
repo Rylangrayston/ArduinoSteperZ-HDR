@@ -38,16 +38,30 @@ int accelerationRate = 20;
 
 int dripDelay = 500;
 int pulsesPerDrip = 20;
-// the loop routine runs over and over again forever:
-
 
 float dipPrintSteps = dipPrintHeight / mmPerStep;
-
-
 int liftPrintSteps = liftPrintHeight/ mmPerStep;
+int stirDeapth = 40;
 
 
 
+void stir(){
+  for (int i = 0; i <= stirDeapth; ++i)
+    {
+            dSPIN_Move(FWD, (1/mmPerStep) * 128.0);
+           while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+    }
+    
+  Serial.println("hit the space key when your done stiring");
+  while (Serial.available() == false);
+    
+     for (int i = 0; i <= stirDeapth; ++i)
+    {
+            dSPIN_Move(REV, (1/mmPerStep) * 128.0);
+           while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+    }
+         
+}
 
 void dipPrint(){
       dSPIN_Move(FWD, dipPrintSteps * 128.0);
@@ -388,6 +402,12 @@ void serialEvent() {
         inChar = '`';
       }  
    
+   
+                  if (inChar == 'z'){
+        Serial.println(inChar);
+        inChar = '`';
+        stir();
+      }  
   }
 }
 
