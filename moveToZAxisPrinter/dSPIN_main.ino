@@ -1,12 +1,14 @@
-float maxHeight = 10; ////////////////////////////////////////////////// GAVIN CHANG THIS
+float maxHeight = 43; ////////////////////////////////////////////////// GAVIN CHANG THIS
 float layerHeight = .1;        // bigDip: 0.1   , bounceyDip
 float dipPrintHeight = 4;    // bigDip: 4.0   , bounceyDip
 int liftPrintHeight = 3;       // bigDip: 3.    , bounceyDip
 int delayAfterLift = 2000;      // bigDip: 2000  , bounceyDip
 int delayAtSurface = 3000;        // bigDip: 0     , bounceyDip
 
-int longestLayerTime = 5000;   
-float resinHeight = 3000.0;
+int longestLayerTime = 9000;   
+float resinHeight = 2.25;
+
+
 
 
 int pause = 1;
@@ -25,7 +27,7 @@ int stepCount = 0;
 boolean firstDrip = true;
 
 float mmPerStep = 0.003927;
-
+float resinHeightSteps = resinHeight / mmPerStep;
 float stepsPerLayer = layerHeight/mmPerStep;
 float dripsPermm = (1.0 / layerHeight) * 2.0; 
 float maxSteps = maxHeight / mmPerStep;
@@ -166,11 +168,11 @@ void setup()
   //dSPIN_SetParam(dSPIN_ACC, 0x009);
   //dSPIN_SetParam(dSPIN_DEC, 0x009);
   
-  dSPIN_SetParam(dSPIN_ACC, 0xFFF);
-  dSPIN_SetParam(dSPIN_DEC, 0x001);
+  dSPIN_SetParam(dSPIN_ACC, AccCalc(5000));
+  dSPIN_SetParam(dSPIN_DEC, DecCalc(5000));
   // Configure the overcurrent detection threshold. The constants for this are defined
   //  in the dSPIN_example.ino file.
-  dSPIN_SetParam(dSPIN_OCD_TH, dSPIN_OCD_TH_2250mA);
+  dSPIN_SetParam(dSPIN_OCD_TH, dSPIN_OCD_TH_6000mA);
   // Set up the CONFIG register as follows:
   //  PWM frequency divisor = 1
   //  PWM frequency multiplier = 2 (62.5kHz PWM frequency)
@@ -199,9 +201,9 @@ void setup()
   
   
   
-  dSPIN_SetParam(dSPIN_KVAL_RUN, 0x7d);
-  dSPIN_SetParam(dSPIN_KVAL_ACC, 0x7d);
-  dSPIN_SetParam(dSPIN_KVAL_DEC, 0x7d);
+  dSPIN_SetParam(dSPIN_KVAL_RUN, 0xff);
+  dSPIN_SetParam(dSPIN_KVAL_ACC, 0x3f);
+  dSPIN_SetParam(dSPIN_KVAL_DEC, 0x3f);
   dSPIN_SetParam(dSPIN_KVAL_HOLD,0x1e);
   
   
@@ -211,7 +213,7 @@ void setup()
   //  passed to this function is in steps/tick; MaxSpdCalc() will convert a number of
   //  steps/s into an appropriate value for this function. Note that for any move or
   //  goto type function where no speed is specified, this value will be used.
-  dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(450));
+  dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(680));
   // Calling GetStatus() clears the UVLO bit in the status register, which is set by
   //  default on power-up. The driver may not run without that bit cleared by this
   //  read operation.
@@ -322,7 +324,7 @@ void findUpperLimit() {
      //}
      }
      
-  dSPIN_Move(FWD, resinHeight * 128.0);
+  dSPIN_Move(FWD, resinHeightSteps * 128.0);
   while (digitalRead(dSPIN_BUSYN) == LOW);
  //delay(100);
 }
@@ -419,7 +421,7 @@ void loop()
 
   if (startup == 1) {
     Serial.println("254 drips per mm");
-    Serial.println("f = faster... s = slower ... p = pause ... g = go/unpause ....  r = restart");
+    Serial.println("f = faster... s = slower ... p = pause ... g = go/unpause ....  r = restart...z = stir....");
     Serial.println("layerHeight:");
     Serial.println(layerHeight);
     Serial.println("mmPerStep");
