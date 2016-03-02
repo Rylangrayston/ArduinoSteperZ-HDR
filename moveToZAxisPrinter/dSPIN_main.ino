@@ -1,15 +1,17 @@
 float maxHeight = 43; ////////////////////////////////////////////////// GAVIN CHANG THIS
-float layerHeight = .1;        // bigDip: 0.1   , bounceyDip
-float dipPrintHeight = 4;    // bigDip: 4.0   , bounceyDip
-int liftPrintHeight = 3;       // bigDip: 3.    , bounceyDip
-int delayAfterLift = 2000;      // bigDip: 2000  , bounceyDip
-int delayAtSurface = 3000;        // bigDip: 0     , bounceyDip
-
-int longestLayerTime = 9000;   
-float resinHeight = 2.25;
+float layerHeight = .16;        // bigDip: 0.1   , bounceyDip
+float dipPrintHeight = 5;    // bigDip: 6.0   , bounceyDip
+int liftPrintHeight = 3.0;       // bigDip: 3.    , bounceyDip
+int delayAfterLift = 4000;      // bigDip: 2000  , bounceyDip
+int delayAtSurface = 3000;        // bigDip: 3000     , bounceyDip
+int secondDipHeight = .2;
 
 
+int longestLayerTime = 16000;   
+float resinHeight = 4;
 
+int layerCount = 0;
+int layersBeforWipeingStarts = 10;
 
 int pause = 1;
 int startup = 1;
@@ -44,6 +46,75 @@ int pulsesPerDrip = 20;
 float dipPrintSteps = dipPrintHeight / mmPerStep;
 int liftPrintSteps = liftPrintHeight/ mmPerStep;
 int stirDeapth = 40;
+int secondDipSteps = secondDipHeight/mmPerStep;
+
+
+
+///#############################################
+
+/* Sweep
+ by BARRAGAN <http://barraganstudio.com>
+ This example code is in the public domain.
+
+ modified 8 Nov 2013
+ by Scott Fitzgerald
+ http://www.arduino.cc/en/Tutorial/Sweep
+*/
+
+#include <Servo.h>
+
+Servo myservo;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+int pos = 0;    // variable to store the servo position
+
+int advanceWiperDelaySpeed = 15;
+int delaySpeedRetracting =15;
+int retractedPosition = 60;
+int forwardPosition = 10;
+
+
+
+
+
+
+
+void retractWiper(){
+    for (pos = forwardPosition; pos <= retractedPosition; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(delaySpeedRetracting);                       // waits 15ms for the servo to reach the position
+  }
+}
+
+
+void advanceWiper(){
+    for (pos = retractedPosition; pos >= forwardPosition; pos -= 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(advanceWiperDelaySpeed);                       // waits 15ms for the servo to reach the position
+  }
+}
+
+
+void dipPrint(){
+  
+   dSPIN_Move(FWD, dipPrintSteps * 128.0);
+         while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+      dSPIN_Move(REV, (dipPrintSteps) * 128.0);
+         while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+  
+  
+}
+
+void wipe(){
+  advanceWiper();
+  retractWiper();
+}
+
+///########################################################@@@@@@@@@@@@@@@@@@@@@
+
+
 
 
 
@@ -65,15 +136,25 @@ void stir(){
          
 }
 
-void dipPrint(){
+void dipAndLiftPrint(){
       dSPIN_Move(FWD, dipPrintSteps * 128.0);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
       dSPIN_Move(REV, (dipPrintSteps + liftPrintSteps) * 128.0);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
          delay(delayAfterLift);
-      dSPIN_Move(FWD, liftPrintSteps * 128.0);
+      dSPIN_Move(FWD, (liftPrintSteps + stepsPerLayer) * 128.0);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+      //dSPIN_Move(FWD, secondDipSteps * 128.0);
+        // while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the         
+         
+     // dSPIN_Move(REV, secondDipSteps * 128.0);
+       //  while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+         
+      
+         
       delay(delayAtSurface);
+      
+      
       
       
          
@@ -95,15 +176,18 @@ void sendDrip(){
 
 
 void nextLayer() {
-  
-  
-  
+  // dSPIN_Move(FWD, stepsPerLayer * 128.0);
+ // while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
   stepCount += stepsPerLayer;
+  
+//  if (layerCount > layersBeforWipeingStarts){
+//  wipe();
+ // }
   sendDrip();
   sendDrip(); 
+  layerCount += 1; 
    
-   dSPIN_Move(FWD, stepsPerLayer * 128.0);
-  while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+
 }
 
 
@@ -131,6 +215,10 @@ void setup()
   pinMode(lightOffOverRidePin, INPUT);
   pinMode(ACPowerPin, OUTPUT);
   pinMode(dripPin, OUTPUT);
+  
+   myservo.attach(A4);  // attaches the servo on pin 9 to the servo object
+   myservo.write(retractedPosition);
+
   
  
   
@@ -447,7 +535,8 @@ if (stepCount < maxSteps && pause == 0){
       Serial.println("send first stager drip");
     }
   
-  dipPrint();
+  //dipPrint();
+  dipAndLiftPrint();
   nextLayer();
   delay(longestLayerTime);
 }
