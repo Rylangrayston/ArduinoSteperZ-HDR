@@ -1,3 +1,6 @@
+
+
+
 float maxHeight = 43; ////////////////////////////////////////////////// GAVIN CHANG THIS
 float layerHeight = .16;        // bigDip: 0.1   , bounceyDip
 float dipPrintHeight = 5;    // bigDip: 6.0   , bounceyDip
@@ -5,10 +8,20 @@ int liftPrintHeight = 3.0;       // bigDip: 3.    , bounceyDip
 int delayAfterLift = 4000;      // bigDip: 2000  , bounceyDip
 int delayAtSurface = 3000;        // bigDip: 3000     , bounceyDip
 int secondDipHeight = .2;
+boolean reserectPhoto = true;
+boolean justArivedAtSurfacePhoto = true;
+boolean afterDelayAtSurfacePhoto = true;
+boolean afterLiftPhoto = true; 
+boolean afterLiftDelayPhoto = true;
+int delayAfterReserect = 5000;
 
+//if (reserectPhoto) { takePhoto(); }
+//-32,768 to 32,767
+
+unsigned long  absStepCount = 0;
 
 int longestLayerTime = 16000;   
-float resinHeight = 4;
+float resinHeight = 6.5;
 
 int layerCount = 0;
 int layersBeforWipeingStarts = 10;
@@ -48,7 +61,7 @@ int liftPrintSteps = liftPrintHeight/ mmPerStep;
 int stirDeapth = 40;
 int secondDipSteps = secondDipHeight/mmPerStep;
 
-
+unsigned long microStepsPerStep = 128;
 
 ///#############################################
 
@@ -73,9 +86,26 @@ int delaySpeedRetracting =15;
 int retractedPosition = 60;
 int forwardPosition = 10;
 
+void reserect(){ ///////////////////////////////////////////////////////////////////////////////////////
+  
+  dSPIN_Move(REV, absStepCount);; //got to home
+  while (digitalRead(dSPIN_BUSYN) == LOW);
+  takePhoto();
+  Serial.println(absStepCount);
+  delay(delayAfterReserect);
+  takePhoto();
+  dSPIN_Move(FWD, absStepCount);//goto to mark
+  while (digitalRead(dSPIN_BUSYN) == LOW);
+  
+  
+  
+}
 
-
-
+void takePhoto(){
+ digitalWrite(shutterPin, HIGH);
+ delay(500);
+ digitalWrite(shutterPin, LOW); 
+}
 
 
 
@@ -99,9 +129,9 @@ void advanceWiper(){
 
 void dipPrint(){
   
-   dSPIN_Move(FWD, dipPrintSteps * 128.0);
+   dSPIN_Move(FWD, dipPrintSteps * microStepsPerStep);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
-      dSPIN_Move(REV, (dipPrintSteps) * 128.0);
+      dSPIN_Move(REV, (dipPrintSteps) * microStepsPerStep);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
   
   
@@ -121,7 +151,7 @@ void wipe(){
 void stir(){
   for (int i = 0; i <= stirDeapth; ++i)
     {
-            dSPIN_Move(FWD, (1/mmPerStep) * 128.0);
+            dSPIN_Move(FWD, (1/mmPerStep) * microStepsPerStep);
            while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
     }
     
@@ -130,29 +160,32 @@ void stir(){
     
      for (int i = 0; i <= stirDeapth; ++i)
     {
-            dSPIN_Move(REV, (1/mmPerStep) * 128.0);
+            dSPIN_Move(REV, (1/mmPerStep) * microStepsPerStep);
            while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
     }
          
 }
 
 void dipAndLiftPrint(){
-      dSPIN_Move(FWD, dipPrintSteps * 128.0);
+      dSPIN_Move(FWD, dipPrintSteps * microStepsPerStep);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
-      dSPIN_Move(REV, (dipPrintSteps + liftPrintSteps) * 128.0);
+      dSPIN_Move(REV, (dipPrintSteps + liftPrintSteps) * microStepsPerStep);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+         if (afterLiftPhoto) { takePhoto(); }
          delay(delayAfterLift);
-      dSPIN_Move(FWD, (liftPrintSteps + stepsPerLayer) * 128.0);
+         if (afterLiftDelayPhoto) { takePhoto(); }
+
+      dSPIN_Move(FWD, (liftPrintSteps + stepsPerLayer) * microStepsPerStep);
          while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
-      //dSPIN_Move(FWD, secondDipSteps * 128.0);
+      //dSPIN_Move(FWD, secondDipSteps * microStepsPerStep);
         // while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the         
          
-     // dSPIN_Move(REV, secondDipSteps * 128.0);
+     // dSPIN_Move(REV, secondDipSteps * microStepsPerStep);
        //  while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
-         
-      
-         
+        
+      if (justArivedAtSurfacePhoto) { takePhoto(); }
       delay(delayAtSurface);
+      if (afterDelayAtSurfacePhoto) { takePhoto(); }
       
       
       
@@ -176,9 +209,10 @@ void sendDrip(){
 
 
 void nextLayer() {
-  // dSPIN_Move(FWD, stepsPerLayer * 128.0);
+  // dSPIN_Move(FWD, stepsPerLayer * microStepsPerStep);
  // while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
   stepCount += stepsPerLayer;
+  absStepCount += stepsPerLayer * microStepsPerStep;
   
 //  if (layerCount > layersBeforWipeingStarts){
 //  wipe();
@@ -306,8 +340,11 @@ void setup()
   //  default on power-up. The driver may not run without that bit cleared by this
   //  read operation.
   dSPIN_GetStatus();
+  while (digitalRead(upperLimitPin) == LOW) {
+     dSPIN_Move(FWD, 100 * microStepsPerStep);
+     while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
+  }
   
-  dSPIN_Move(FWD, 100*128);
 }
 
 
@@ -397,7 +434,7 @@ void abortIfLimitSwitch(){
 void findUpperLimit() {
   
   while (digitalRead(upperLimitPin) == HIGH) {
-     dSPIN_Move(REV, 40 * 128.0);
+     dSPIN_Move(REV, 40 * microStepsPerStep);
      while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
      stepCount = 0;
      pause = 1;
@@ -412,15 +449,17 @@ void findUpperLimit() {
      //}
      }
      
-  dSPIN_Move(FWD, resinHeightSteps * 128.0);
+  dSPIN_Move(FWD, resinHeightSteps * microStepsPerStep);
   while (digitalRead(dSPIN_BUSYN) == LOW);
+  dSPIN_ResetPos();
+  absStepCount = 0;
  //delay(100);
 }
 
 void findLowerLimit() {
   
   while (digitalRead(lowerLimitPin) == HIGH) {
-     dSPIN_Move(FWD, 40 * 128.0);
+     dSPIN_Move(FWD, 40 * microStepsPerStep);
      while (digitalRead(dSPIN_BUSYN) == LOW);  // wait Until the movement completes, the
      //dSPIN_SetParam(dSPIN_MAX_SPEED, MaxSpdCalc(max_speed_rise)); 
      //max_speed_rise += accelerationRate; 
@@ -428,7 +467,7 @@ void findLowerLimit() {
      // maxSpeedRise = 100;
      }
      
-  dSPIN_Move(REV, 700.0 * 128.0);
+  dSPIN_Move(REV, 700.0 * microStepsPerStep);
   while (digitalRead(dSPIN_BUSYN) == LOW);
  delay(100);
 }
@@ -440,13 +479,13 @@ void serialEvent() {
     char inChar = (char)Serial.read(); 
 
       if (inChar == 'd'){
-        dSPIN_Move(FWD, 200.0 * 128.0);
+        dSPIN_Move(FWD, 200.0 * microStepsPerStep);
         Serial.println(inChar);
         inChar = '`';
       }
       
       if (inChar == 'u'){
-        dSPIN_Move(REV, 10000.0 * 128.0);
+        dSPIN_Move(REV, 10000.0 * microStepsPerStep);
         Serial.println(inChar);
         inChar = '`';
       }      
@@ -539,6 +578,7 @@ if (stepCount < maxSteps && pause == 0){
   dipAndLiftPrint();
   nextLayer();
   delay(longestLayerTime);
+  //reserect();
 }
 
 if (stepCount > maxSteps && pause == 0){
